@@ -16,23 +16,79 @@ interface NodeConfigPanelProps {
   onUpdate: (data: any) => void;
 }
 
+interface Condition {
+  id: string;
+  type: string;
+  subConditions: {
+    field: string;
+    operator: string;
+    value: string;
+    timeValue?: string;
+    timeUnit?: string;
+  }[];
+}
+
 export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProps) {
   const [config, setConfig] = useState({
     name: node.data.config?.name || '',
     template: node.data.config?.template || '',
-    condition: node.data.config?.condition || '',
     smartSending: node.data.config?.smartSending ?? true,
     skipCampaign: node.data.config?.skipCampaign ?? true,
     skipFlow: node.data.config?.skipFlow ?? true,
   });
 
+  const [conditions, setConditions] = useState<Condition[]>([
+    {
+      id: '1',
+      type: 'properties-about-someone',
+      subConditions: [
+        { field: 'platform', operator: 'equals', value: 'MacOs' }
+      ]
+    },
+    {
+      id: '2',
+      type: 'what-someone-has-done',
+      subConditions: [
+        { field: 'active-on-site', operator: 'at-least-once', value: 'in-the-last', timeValue: '30', timeUnit: 'days' }
+      ]
+    }
+  ]);
+
+  const [conditionOperator, setConditionOperator] = useState<'AND' | 'OR'>('AND');
+
   const handleSave = () => {
-    onUpdate({ config });
+    onUpdate({ config, conditions });
     onClose();
   };
 
   const handleCancel = () => {
     onClose();
+  };
+
+  const addCondition = (conditionGroupId: string) => {
+    setConditions(conditions.map(cond => {
+      if (cond.id === conditionGroupId) {
+        return {
+          ...cond,
+          subConditions: [
+            ...cond.subConditions,
+            { field: '', operator: '', value: '' }
+          ]
+        };
+      }
+      return cond;
+    }));
+  };
+
+  const addConditionGroup = () => {
+    setConditions([
+      ...conditions,
+      {
+        id: Date.now().toString(),
+        type: '',
+        subConditions: [{ field: '', operator: '', value: '' }]
+      }
+    ]);
   };
 
   // Push Notification Configuration
@@ -102,29 +158,215 @@ export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProp
             Turn into A/B Test
           </Button>
 
-          {/* Condition Field */}
-          <div className="space-y-2">
-            <Label htmlFor="condition" className="text-sm font-medium">Condition</Label>
-            <div className="relative">
-              <select
-                id="condition"
-                value={config.condition}
-                onChange={(e) => setConfig({ ...config, condition: e.target.value })}
-                className="w-full h-11 px-3 pr-10 border rounded-md bg-background appearance-none"
-              >
-                <option value="">Select condition</option>
-                <option value="subscribers-properties">Subscribers Properties</option>
-                <option value="behavior">Behavior</option>
-                <option value="location">Location</option>
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            </div>
-            {config.condition === 'subscribers-properties' && (
-              <div className="mt-2 p-3 bg-teal-50 border border-teal-200 rounded-md">
-                <div className="text-xs font-medium text-teal-900 mb-1">Subscribers Properties</div>
-                <div className="text-xs text-teal-700">Subscribers has done or not done</div>
+          {/* Conditions Builder */}
+          <div className="space-y-4">
+            {conditions.map((condition, groupIndex) => (
+              <div key={condition.id}>
+                {/* Condition Group */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Conditions</div>
+                  
+                  {/* Main Condition Type */}
+                  <div className="relative">
+                    <select
+                      value={condition.type}
+                      onChange={(e) => {
+                        const newConditions = [...conditions];
+                        newConditions[groupIndex].type = e.target.value;
+                        setConditions(newConditions);
+                      }}
+                      className="w-full h-11 px-3 pr-10 border rounded-md bg-background appearance-none"
+                    >
+                      <option value="">Select condition</option>
+                      <option value="properties-about-someone">Properties about someone</option>
+                      <option value="what-someone-has-done">What someone has done(or not done)</option>
+                      <option value="someone-is-in">Someone is in (or not in) a list</option>
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  </div>
+
+                  {/* Sub-conditions with indentation */}
+                  {condition.subConditions.map((subCond, subIndex) => (
+                    <div key={subIndex} className="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
+                      {/* First dropdown */}
+                      <div className="relative">
+                        <select
+                          value={subCond.field}
+                          onChange={(e) => {
+                            const newConditions = [...conditions];
+                            newConditions[groupIndex].subConditions[subIndex].field = e.target.value;
+                            setConditions(newConditions);
+                          }}
+                          className="w-full h-11 px-3 pr-10 border rounded-md bg-background appearance-none"
+                        >
+                          <option value="">Select field</option>
+                          {condition.type === 'properties-about-someone' && (
+                            <>
+                              <option value="platform">Platform</option>
+                              <option value="device">Device</option>
+                              <option value="browser">Browser</option>
+                            </>
+                          )}
+                          {condition.type === 'what-someone-has-done' && (
+                            <>
+                              <option value="active-on-site">Active on site</option>
+                              <option value="viewed-product">Viewed product</option>
+                              <option value="made-purchase">Made purchase</option>
+                            </>
+                          )}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      </div>
+
+                      {/* Second dropdown */}
+                      <div className="relative">
+                        <select
+                          value={subCond.operator}
+                          onChange={(e) => {
+                            const newConditions = [...conditions];
+                            newConditions[groupIndex].subConditions[subIndex].operator = e.target.value;
+                            setConditions(newConditions);
+                          }}
+                          className="w-full h-11 px-3 pr-10 border rounded-md bg-background appearance-none"
+                        >
+                          <option value="">Select operator</option>
+                          {condition.type === 'properties-about-someone' && (
+                            <>
+                              <option value="equals">Equals</option>
+                              <option value="not-equals">Not equals</option>
+                              <option value="contains">Contains</option>
+                            </>
+                          )}
+                          {condition.type === 'what-someone-has-done' && (
+                            <>
+                              <option value="at-least-once">At least once</option>
+                              <option value="zero-times">Zero times</option>
+                              <option value="at-least">At least</option>
+                            </>
+                          )}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                      </div>
+
+                      {/* Third field - varies by condition type */}
+                      {condition.type === 'properties-about-someone' ? (
+                        <div className="relative">
+                          <Input
+                            value={subCond.value}
+                            onChange={(e) => {
+                              const newConditions = [...conditions];
+                              newConditions[groupIndex].subConditions[subIndex].value = e.target.value;
+                              setConditions(newConditions);
+                            }}
+                            placeholder="Enter value (e.g., MacOs)"
+                            className="h-11"
+                          />
+                        </div>
+                      ) : condition.type === 'what-someone-has-done' && (
+                        <>
+                          <div className="relative">
+                            <select
+                              value={subCond.value}
+                              onChange={(e) => {
+                                const newConditions = [...conditions];
+                                newConditions[groupIndex].subConditions[subIndex].value = e.target.value;
+                                setConditions(newConditions);
+                              }}
+                              className="w-full h-11 px-3 pr-10 border rounded-md bg-background appearance-none"
+                            >
+                              <option value="">Select timeframe</option>
+                              <option value="in-the-last">in the last</option>
+                              <option value="ever">ever</option>
+                              <option value="between">between</option>
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                          </div>
+
+                          {/* Time value and unit */}
+                          {subCond.value === 'in-the-last' && (
+                            <div className="flex gap-2">
+                              <Input
+                                type="number"
+                                value={subCond.timeValue || ''}
+                                onChange={(e) => {
+                                  const newConditions = [...conditions];
+                                  newConditions[groupIndex].subConditions[subIndex].timeValue = e.target.value;
+                                  setConditions(newConditions);
+                                }}
+                                placeholder="30"
+                                className="h-11 w-24"
+                              />
+                              <div className="relative flex-1">
+                                <select
+                                  value={subCond.timeUnit || ''}
+                                  onChange={(e) => {
+                                    const newConditions = [...conditions];
+                                    newConditions[groupIndex].subConditions[subIndex].timeUnit = e.target.value;
+                                    setConditions(newConditions);
+                                  }}
+                                  className="w-full h-11 px-3 pr-10 border rounded-md bg-background appearance-none"
+                                >
+                                  <option value="">Unit</option>
+                                  <option value="days">Days</option>
+                                  <option value="hours">Hours</option>
+                                  <option value="weeks">Weeks</option>
+                                  <option value="months">Months</option>
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Add Condition Button */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addCondition(condition.id)}
+                    className="text-teal-600 border-teal-600 hover:bg-teal-50"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Condition
+                  </Button>
+                </div>
+
+                {/* AND/OR Toggle between condition groups */}
+                {groupIndex < conditions.length - 1 && (
+                  <div className="flex items-center justify-center gap-2 my-4">
+                    <Button
+                      variant={conditionOperator === 'AND' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setConditionOperator('AND')}
+                      className={conditionOperator === 'AND' ? 'bg-gray-900 hover:bg-gray-800' : 'hover:bg-gray-50'}
+                    >
+                      AND
+                    </Button>
+                    <Button
+                      variant={conditionOperator === 'OR' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setConditionOperator('OR')}
+                      className={conditionOperator === 'OR' ? 'bg-gray-900 hover:bg-gray-800' : 'hover:bg-gray-50 text-muted-foreground'}
+                    >
+                      OR
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
+            ))}
+
+            {/* Add Condition Group Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addConditionGroup}
+              className="text-teal-600 border-teal-600 hover:bg-teal-50"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Condition Group
+            </Button>
           </div>
 
           {/* Settings Section */}
