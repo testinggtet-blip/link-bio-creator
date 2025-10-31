@@ -5,19 +5,34 @@ import { GitBranch } from 'lucide-react';
 
 export function ConditionNode({ data }: NodeProps) {
   return (
-    <div className="px-4 py-3 shadow-lg rounded-lg bg-background border-2 border-amber-500 min-w-[180px]">
+    <div className="shadow-lg rounded-lg overflow-hidden border-2 border-cyan-400 min-w-[280px]">
+      {/* Colored Header */}
+      <div className="bg-cyan-300 px-3 py-1.5">
+        <div className="text-sm font-medium text-cyan-900">{data.label || 'Condition'}</div>
+      </div>
+      
+      {/* White Content Area */}
+      <div className="bg-white px-4 py-3">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-md bg-cyan-500/10 flex-shrink-0">
+            <GitBranch className="h-5 w-5 text-cyan-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-sm text-gray-900 mb-1">
+              {data.title || 'Branch'}
+            </div>
+            <div className="text-xs text-gray-500">
+              {data.description || 'No conditions selected: evaluates to False'}
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-amber-500"
+        className="w-3 h-3 !bg-cyan-500"
       />
-      <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 rounded-md bg-amber-500/10">
-          <GitBranch className="h-4 w-4 text-amber-500" />
-        </div>
-        <div className="font-semibold text-sm">Condition</div>
-      </div>
-      <div className="text-xs text-muted-foreground">{data.label}</div>
       <Handle
         type="source"
         position={Position.Bottom}

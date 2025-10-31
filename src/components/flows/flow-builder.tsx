@@ -16,10 +16,16 @@ import {
   Panel,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { TriggerNode } from './nodes/trigger-node';
-import { ActionNode } from './nodes/action-node';
-import { ConditionNode } from './nodes/condition-node';
-import { NotificationNode } from './nodes/notification-node';
+import { PushNotificationNode } from './nodes/push-notification-node';
+import { EmailNode } from './nodes/email-node';
+import { TwilioSmsNode } from './nodes/twilio-sms-node';
+import { UpdateActionNode } from './nodes/update-action-node';
+import { SendReceiveDataNode } from './nodes/send-receive-data-node';
+import { TimeDelayNode } from './nodes/time-delay-node';
+import { TrueFalseBranchNode } from './nodes/true-false-branch-node';
+import { MultiSplitBranchNode } from './nodes/multi-split-branch-node';
+import { RandomCohortBranchNode } from './nodes/random-cohort-branch-node';
+import { ExitNode } from './nodes/exit-node';
 import { NodesSidebar } from './nodes-sidebar';
 import { FlowToolbar } from './flow-toolbar';
 import { NodeConfigPanel } from './node-config-panel';
@@ -27,10 +33,16 @@ import { Button } from '@/components/ui/button';
 import { Save, Play, Settings } from 'lucide-react';
 
 const nodeTypes = {
-  trigger: TriggerNode,
-  action: ActionNode,
-  condition: ConditionNode,
-  notification: NotificationNode,
+  'push-notification': PushNotificationNode,
+  'email': EmailNode,
+  'twilio-sms': TwilioSmsNode,
+  'update-action': UpdateActionNode,
+  'send-receive-data': SendReceiveDataNode,
+  'time-delay': TimeDelayNode,
+  'true-false-branch': TrueFalseBranchNode,
+  'multi-split-branch': MultiSplitBranchNode,
+  'random-cohort-branch': RandomCohortBranchNode,
+  'exit': ExitNode,
 };
 
 const initialNodes: Node[] = [];
