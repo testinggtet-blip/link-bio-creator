@@ -30,7 +30,7 @@ import { NodesSidebar } from './nodes-sidebar';
 import { FlowToolbar } from './flow-toolbar';
 import { NodeConfigPanel } from './node-config-panel';
 import { Button } from '@/components/ui/button';
-import { Save, Play, Settings } from 'lucide-react';
+import { Save, Play, Settings, Trash2 } from 'lucide-react';
 
 const nodeTypes = {
   'push-notification': PushNotificationNode,
@@ -130,6 +130,12 @@ function FlowBuilderContent() {
     );
   }, [setNodes]);
 
+  const deleteNode = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    setSelectedNode(null);
+  }, [setNodes, setEdges]);
+
   return (
     <div className="h-screen w-full flex flex-col">
       {/* Top Toolbar */}
@@ -141,6 +147,17 @@ function FlowBuilderContent() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {selectedNode && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => deleteNode(selectedNode.id)}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Node
+            </Button>
+          )}
           <Button variant="outline" size="sm">
             <Settings className="h-4 w-4 mr-2" />
             Settings
@@ -177,6 +194,7 @@ function FlowBuilderContent() {
             nodeTypes={nodeTypes}
             fitView
             className="bg-muted/20"
+            deleteKeyCode="Delete"
           >
             <Background />
             <Controls />
@@ -193,7 +211,7 @@ function FlowBuilderContent() {
               className="bg-background border"
             />
             <Panel position="top-left" className="bg-background/80 backdrop-blur-sm rounded-lg border p-2 text-xs">
-              Drag nodes from the sidebar to the canvas
+              Drag nodes from the sidebar to the canvas • Press Delete to remove selected node
             </Panel>
           </ReactFlow>
         </div>
@@ -204,6 +222,7 @@ function FlowBuilderContent() {
             node={selectedNode} 
             onClose={() => setSelectedNode(null)}
             onUpdate={(data) => updateNodeData(selectedNode.id, data)}
+            onDelete={() => deleteNode(selectedNode.id)}
           />
         )}
       </div>

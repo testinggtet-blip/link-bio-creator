@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Plus, ChevronDown } from 'lucide-react';
+import { X, Plus, ChevronDown, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,7 @@ interface NodeConfigPanelProps {
   node: Node;
   onClose: () => void;
   onUpdate: (data: any) => void;
+  onDelete: () => void;
 }
 
 interface Condition {
@@ -28,7 +29,7 @@ interface Condition {
   }[];
 }
 
-export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProps) {
+export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfigPanelProps) {
   const [config, setConfig] = useState({
     name: node.data.config?.name || '',
     template: node.data.config?.template || '',
@@ -89,6 +90,24 @@ export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProp
         subConditions: [{ field: '', operator: '', value: '' }]
       }
     ]);
+  };
+
+  const deleteCondition = (conditionGroupId: string, subConditionIndex?: number) => {
+    if (subConditionIndex !== undefined) {
+      // Delete a sub-condition
+      setConditions(conditions.map(cond => {
+        if (cond.id === conditionGroupId) {
+          return {
+            ...cond,
+            subConditions: cond.subConditions.filter((_, idx) => idx !== subConditionIndex)
+          };
+        }
+        return cond;
+      }).filter(cond => cond.subConditions.length > 0)); // Remove groups with no sub-conditions
+    } else {
+      // Delete entire condition group
+      setConditions(conditions.filter(cond => cond.id !== conditionGroupId));
+    }
   };
 
   // Push Notification Configuration
@@ -164,7 +183,17 @@ export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProp
               <div key={condition.id}>
                 {/* Condition Group */}
                 <div className="border rounded-lg p-4 space-y-3">
-                  <div className="text-xs font-medium text-muted-foreground mb-2">Conditions</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-medium text-muted-foreground">Conditions</div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteCondition(condition.id)}
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                   
                   {/* Main Condition Type */}
                   <div className="relative">
@@ -187,7 +216,17 @@ export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProp
 
                   {/* Sub-conditions with indentation */}
                   {condition.subConditions.map((subCond, subIndex) => (
-                    <div key={subIndex} className="ml-6 space-y-3 border-l-2 border-gray-200 pl-4">
+                    <div key={subIndex} className="ml-6 space-y-3 border-l-2 border-gray-200 pl-4 relative">
+                      {/* Delete sub-condition button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteCondition(condition.id, subIndex)}
+                        className="absolute -left-3 top-0 h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 bg-background border"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+
                       {/* First dropdown */}
                       <div className="relative">
                         <select
@@ -430,13 +469,23 @@ export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProp
         </div>
 
         {/* Footer Buttons */}
-        <div className="border-t px-6 py-4 flex items-center justify-end gap-3">
-          <Button variant="outline" onClick={handleCancel} className="h-10 px-6">
-            Cancel
+        <div className="border-t px-6 py-4 flex items-center justify-between gap-3">
+          <Button 
+            variant="outline" 
+            onClick={onDelete}
+            className="h-10 px-4 text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Node
           </Button>
-          <Button onClick={handleSave} className="h-10 px-6 bg-teal-600 hover:bg-teal-700">
-            Create
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={handleCancel} className="h-10 px-6">
+              Cancel
+            </Button>
+            <Button onClick={handleSave} className="h-10 px-6 bg-teal-600 hover:bg-teal-700">
+              Create
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -464,6 +513,15 @@ export function NodeConfigPanel({ node, onClose, onUpdate }: NodeConfigPanelProp
             {node.type}
           </div>
         </div>
+
+        <Button 
+          variant="destructive" 
+          onClick={onDelete}
+          className="w-full"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete Node
+        </Button>
 
         <Button onClick={onClose} className="w-full">
           Close
