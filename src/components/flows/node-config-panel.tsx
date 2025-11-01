@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type Node } from 'reactflow';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ABTestDialog } from './ab-test-dialog';
 import { EditVariationDialog } from './edit-variation-dialog';
 
