@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { type Node } from 'reactflow';
 import { useState } from 'react';
 import { ABTestDialog } from './ab-test-dialog';
-import { useRouter } from 'next/navigation';
+import { EditVariationDialog } from './edit-variation-dialog';
 
 interface NodeConfigPanelProps {
   node: Node;
@@ -97,7 +97,18 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
   };
 
   const handleEditVariation = (variationId: string) => {
-    router.push(`/flows/ab-test/${variationId}`);
+    setEditingVariation(variationId);
+  };
+
+  const handleSaveVariation = (template: string) => {
+    if (editingVariation) {
+      setAbVariations(prev => prev.map(v => 
+        v.id === editingVariation 
+          ? { ...v, template }
+          : v
+      ));
+      setEditingVariation(null);
+    }
   };
 
   const updateVariationPercentage = (variantId: string, newPercentage: number) => {
@@ -660,6 +671,17 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
           onEditVariation={handleEditVariation}
           onSave={handleABTestSave}
         />
+
+        {/* Edit Variation Dialog */}
+        {editingVariation && (
+          <EditVariationDialog
+            open={!!editingVariation}
+            onOpenChange={(open) => !open && setEditingVariation(null)}
+            variationId={editingVariation}
+            variationName={abVariations.find(v => v.id === editingVariation)?.name}
+            onSave={handleSaveVariation}
+          />
+        )}
       </div>
     );
   }
