@@ -9,6 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { type Node } from 'reactflow';
 import { useState } from 'react';
+import { ABTestDialog } from './ab-test-dialog';
+import { useRouter } from 'next/navigation';
 
 interface NodeConfigPanelProps {
   node: Node;
@@ -38,6 +40,7 @@ interface ABVariation {
 }
 
 export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfigPanelProps) {
+  const router = useRouter();
   const [config, setConfig] = useState({
     name: node.data.config?.name || '',
     template: node.data.config?.template || '',
@@ -65,6 +68,7 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
 
   const [conditionOperator, setConditionOperator] = useState<'AND' | 'OR'>('AND');
   const [isABTest, setIsABTest] = useState(node.data.config?.isABTest ?? false);
+  const [showABTestDialog, setShowABTestDialog] = useState(false);
   const [abVariations, setAbVariations] = useState<ABVariation[]>(
     node.data.config?.abVariations ?? []
   );
@@ -80,24 +84,20 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
   };
 
   const handleEnableABTest = () => {
-    const variations: ABVariation[] = [
-      {
-        id: 'variant-a',
-        name: 'Variation A',
-        status: 'active',
-        percentage: 100,
-        template: 'Email 1'
-      },
-      {
-        id: 'variant-b',
-        name: 'Variation B',
-        status: 'inactive',
-        percentage: 0,
-        template: 'Email 1'
-      }
-    ];
-    setAbVariations(variations);
+    setShowABTestDialog(true);
+  };
+
+  const handleABTestSave = (data: any) => {
+    setAbVariations(data.variations);
     setIsABTest(true);
+    onUpdate({ 
+      config: { ...config, isABTest: true, abVariations: data.variations }, 
+      conditions 
+    });
+  };
+
+  const handleEditVariation = (variationId: string) => {
+    router.push(`/flows/ab-test/${variationId}`);
   };
 
   const updateVariationPercentage = (variantId: string, newPercentage: number) => {
@@ -534,6 +534,10 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
             <>
               {/* A/B Test View */}
               <div className="space-y-6">
+                <div className="text-sm text-muted-foreground">
+                  A/B Test is enabled. Configure your test variations below.
+                </div>
+
                 {abVariations.map((variation) => (
                   <div key={variation.id}>
                     {/* Status Badge */}
@@ -565,7 +569,7 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
                               >
                                 {variation.id === 'variant-a' ? 'A' : 'B'} {variation.percentage}%
                               </span>
-                              <span className="font-semibold">{variation.template}</span>
+                              <span className="font-semibold">{variation.template || config.template}</span>
                             </div>
 
                             {/* Percentage Slider */}
@@ -605,9 +609,9 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
                       {/* Edit Button */}
                       <button 
                         className="w-full py-3 border-t text-center font-semibold hover:bg-muted/50 transition-colors"
-                        onClick={() => setEditingVariation(variation.id)}
+                        onClick={() => handleEditVariation(variation.id)}
                       >
-                        Edit {variation.name}
+                        Edit {variation.name || `Variation ${variation.id === 'variant-a' ? 'A' : 'B'}`}
                       </button>
                     </div>
                   </div>
@@ -648,6 +652,14 @@ export function NodeConfigPanel({ node, onClose, onUpdate, onDelete }: NodeConfi
             </Button>
           </div>
         </div>
+
+        {/* A/B Test Dialog */}
+        <ABTestDialog
+          open={showABTestDialog}
+          onOpenChange={setShowABTestDialog}
+          onEditVariation={handleEditVariation}
+          onSave={handleABTestSave}
+        />
       </div>
     );
   }
